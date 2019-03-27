@@ -1,0 +1,52 @@
+import pandas as pd
+from matplotlib import pyplot as plt
+
+
+def encode(path, column_name):  # 对公司名之类的进行分类编码：1、2、3、... （需要做一个输入名称列表进行编码的改进而不是单个）
+    file = pd.read_csv(path, encoding='gbk')
+    column = file[column_name]
+    dic = {}
+    n = 1
+    for unit in column:  # 对该列进行编码
+        if unit not in dic:
+            dic[unit] = n
+            n += 1
+    li = []  # 得到的编码列
+    for unit in column:
+        li.append(dic[unit])
+    file['SITE_ID'] = li
+    file.drop([column_name], axis=1).to_csv("./data/first_experiment3.csv", encoding='gbk')
+    print(len(list(set(li))))
+
+
+def delete(path): # 清除所有null、未收集、无、铭牌无
+    file = pd.read_csv(path, encoding='gbk')
+    word_li = ["未收集", "无", "铭牌无"]
+    drop_row = []
+    for index, row in file.iterrows():
+            for unit in row:
+                if (unit in word_li) or (pd.isnull(unit)):
+                    drop_row.append(index)
+                    break
+    print(drop_row)
+
+
+def creatlabel(path, column_name1, column_name2):  # 输入文件路径以及列名，根据运行时间与缺陷发生时间创建label
+    label_li = []
+    file = pd.read_csv(path, encoding='gbk')
+    column1 = file[column_name1]
+    column2 = file[column_name2]
+    li1 = pd.to_datetime(column1)
+    li2 = pd.to_datetime(column2)
+    for i in range(len(li1)):
+        label_li.append(li2[i] - li1[i])
+    for i in range(len(label_li)):
+        label_li[i] = label_li[i].days
+    print(label_li)
+    file['label'] = label_li
+    file.to_csv('./data/pro_3.csv')
+
+
+if __name__ == "__main__":
+    path = './data/first_experiment2.csv'
+    encode(path, 'SITE_ID2')
