@@ -2,7 +2,14 @@ import pandas as pd
 from matplotlib import pyplot as plt
 
 
-def encode(path, column_name):  # 对公司名之类的进行分类编码：1、2、3、... （需要做一个输入名称列表进行编码的改进而不是单个）
+def encode(path, column_name):  
+    '''
+    对公司名之类的进行分类编码：1、2、3、... （需要做一个输入名称列表进行编码的改进而不是单个）
+    处理csv文件
+    :param path: 文件路径
+    :param column_name: 列名
+    :return: 
+    '''
     file = pd.read_csv(path, encoding='gbk')
     column = file[column_name]
     dic = {}
@@ -31,7 +38,14 @@ def delete(path): # 清除所有null、未收集、无、铭牌无
     print(drop_row)
 
 
-def creatlabel(path, column_name1, column_name2):  # 输入文件路径以及列名，根据运行时间与缺陷发生时间创建label
+def creatlabel(path, column_name1, column_name2):  
+    '''
+    输入文件路径以及列名，根据运行时间与缺陷发生时间创建label
+    :param path: 数据路径
+    :param column_name1: 设备开始运行时间
+    :param column_name2: 设备发生缺陷的时间
+    :return: 
+    '''
     label_li = []
     file = pd.read_csv(path, encoding='gbk')
     column1 = file[column_name1]
