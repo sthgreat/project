@@ -2,18 +2,11 @@ import pandas as pd
 from matplotlib import pyplot as plt
 
 
-def encode(path, column_name):  
-    '''
-    对公司名之类的进行分类编码：1、2、3、... （需要做一个输入名称列表进行编码的改进而不是单个）
-    处理csv文件
-    :param path: 文件路径
-    :param column_name: 列名
-    :return: 
-    '''
+def encode(path, column_name):  # 对公司名之类的进行分类编码：1、2、3、... （需要做一个输入名称列表进行编码的改进而不是单个）
     file = pd.read_csv(path, encoding='gbk')
     column = file[column_name]
     dic = {}
-    n = 1
+    n = 0
     for unit in column:  # 对该列进行编码
         if unit not in dic:
             dic[unit] = n
@@ -21,12 +14,12 @@ def encode(path, column_name):
     li = []  # 得到的编码列
     for unit in column:
         li.append(dic[unit])
-    file['SITE_ID'] = li
-    file.drop([column_name], axis=1).to_csv("./data/first_experiment3.csv", encoding='gbk')
+    file['MANUFACTURER_ID'] = li
+    file.drop([column_name], axis=1).to_csv("./data/pro_2.csv", encoding='gbk')
     print(len(list(set(li))))
 
 
-def delete(path): # 清除所有null、未收集、无、铭牌无
+def delete(path): # 清除所有null、未收集、无、铭牌无，可在excel里实现，废除
     file = pd.read_csv(path, encoding='gbk')
     word_li = ["未收集", "无", "铭牌无"]
     drop_row = []
@@ -38,14 +31,7 @@ def delete(path): # 清除所有null、未收集、无、铭牌无
     print(drop_row)
 
 
-def creatlabel(path, column_name1, column_name2):  
-    '''
-    输入文件路径以及列名，根据运行时间与缺陷发生时间创建label
-    :param path: 数据路径
-    :param column_name1: 设备开始运行时间
-    :param column_name2: 设备发生缺陷的时间
-    :return: 
-    '''
+def creatlabel(path, column_name1, column_name2):  # 输入文件路径以及列名，创建标签数据
     label_li = []
     file = pd.read_csv(path, encoding='gbk')
     column1 = file[column_name1]
@@ -57,10 +43,74 @@ def creatlabel(path, column_name1, column_name2):
     for i in range(len(label_li)):
         label_li[i] = label_li[i].days
     print(label_li)
-    file['label'] = label_li
-    file.to_csv('./data/pro_3.csv')
+
+
+def delete_wrong_data(path):  # 删除出厂日期后于投运日期的错误数据
+    file = pd.read_csv(path, encoding='utf-8')
+    column_a1 = file['投运日期Year']
+    column_a2 = file['投运日期Dayofyear']
+    column_b1 = file['出厂日期Year']
+    column_b2 = file['出厂日期Dayofyear']
+    row_dorp_li = []
+
+    def isbefore(year_run,day_run,year_out,day_out):
+        if(year_run < year_out):
+            return True
+        elif(year_run == year_out):
+            return(day_run<day_out)
+        else:
+            return False
+
+    for i in range(len(column_a1)):
+        if(isbefore(column_a1[i],column_a2[i],column_b1[i],column_b2[i])):
+            row_dorp_li.append(i)
+    file.drop(row_dorp_li, axis=0).to_csv('./data/test_time/train_hash_easy1.csv', encoding='gbk')
+
+
+def Select_By_Device_ID(path, name, n):  # 按某一ID提取出所有的同类别缺陷保存在一个csv文件中
+    '''
+    手动更改下91行目录 file2...
+    :param path: 待处理文件路径
+    :param name: ID类别列名
+    :param n: 阈值，提取出现次数大于n的进行保存
+    :return:
+    '''
+    dic = {}
+    file = pd.read_csv(path)
+    ID = file[name]
+    count = 1
+    for i in ID:
+        count += 1  # 记录行数
+        if i not in dic:  # dic[i]:一个列表，第一个数记录一共多少个，之后记录行数
+            dic[i] = []
+            dic[i].append(1)
+            dic[i].append(count)
+        else:
+            dic[i][0] += 1
+            dic[i].append(count)
+
+    for ID_ in dic:  # 将出现次数大于阈值的缺陷条目按类别分类保存
+        file2 = pd.DataFrame()
+        if(dic[ID_][0] >= n):
+            for row_num in range(1, len(dic[ID_])):
+                file2 = file2.append(file[(row_num - 1):row_num])
+            file2.to_csv('./data/data/selected_by_factory_ID/factory_ID/factory_ID_' + str(ID_) + '.csv', encoding='utf-8')
+
+    # for ID_ in dic:  # 记录ID的出现次数
+    #     if(dic[ID_][0]<=n):
+    #         with open('./data/data/selected_by_factory_ID/minority.txt', 'a', encoding='utf-8') as f:
+    #             f.write(str(ID_) + ' ')
+    #             for i in range(1, len(dic[ID_])):
+    #                 f.write(str(dic[ID_][i]) + ' ')
+    #             f.write('\n')
+    #     else:
+    #         with open('./data/data/selected_by_factory_ID/train_set.txt', 'a', encoding='utf-8') as f:
+    #             f.write(str(ID_) + ' ')
+    #             for i in range(1, len(dic[ID_])):
+    #                 f.write(str(dic[ID_][i]) + ' ')
+    #             f.write('\n')
 
 
 if __name__ == "__main__":
-    path = './data/first_experiment2.csv'
-    encode(path, 'SITE_ID2')
+    path = './data/data/selected_by_factory_ID/noname.csv'
+    Select_By_Device_ID(path, 'MANUFACTURER_ID', 10)
