@@ -67,7 +67,7 @@ def delete_wrong_data(path):  # 删除出厂日期后于投运日期的错误数
     file.drop(row_dorp_li, axis=0).to_csv('./data/test_time/train_hash_easy1.csv', encoding='gbk')
 
 
-def Select_By_Device_ID(path, name, n):  # 按某一ID提取出所有的同类别缺陷保存在一个csv文件中
+def Select_By_ID(path, name, n):  # 按某一ID提取出所有的同类别缺陷保存在一个csv文件中
     '''
     手动更改下91行目录 file2...
     :param path: 待处理文件路径
@@ -113,4 +113,4 @@ def Select_By_Device_ID(path, name, n):  # 按某一ID提取出所有的同类�
 
 if __name__ == "__main__":
     path = './data/data/selected_by_factory_ID/noname.csv'
-    Select_By_Device_ID(path, 'MANUFACTURER_ID', 10)
+    Select_By_ID(path, 'MANUFACTURER_ID', 10)
