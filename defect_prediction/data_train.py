@@ -6,7 +6,9 @@ from sklearn.model_selection import train_test_split
 import lightgbm as lgb
 import xgboost as xgb
 from lightgbm.sklearn import LGBMRegressor
-import sklearn
+from sklearn.ensemble import RandomForestRegressor, ExtraTreesRegressor, GradientBoostingRegressor
+from sklearn.preprocessing import StandardScaler
+from sklearn import preprocessing
 
 
 def read_data(path):
@@ -71,6 +73,16 @@ def predict(model_path, test_set_path):
     error = error/len(ans)
     print('平均误差为'+str(error)+'天')
 
+    
+def RF(X_train, X_test, y_train, y_test):
+    rfr = RandomForestRegressor()
+    rfr.fit(X_train, y_train)
+    rfr_y_predict = rfr.predict(X_test)
+    print("随机森林回归的默认评估值为：", rfr.score(X_test, y_test))
+    print("随机森林回归的R_squared值为：", r2_score(y_test, rfr_y_predict))
+    print("随机森林回归的均方误差为:", mean_squared_error(y_test, rfr_y_predict))
+    print("随机森林回归的平均绝对误差为:", mean_absolute_error(y_test, rfr_y_predict))
+    
 
 if __name__ == "__main__":
     data_path = './data/data/first_experiment.csv'
