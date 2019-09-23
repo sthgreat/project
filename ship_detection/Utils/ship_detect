@@ -1,0 +1,73 @@
+from PIL import Image
+import numpy as np
+import utils
+
+
+class detect:
+    img_path = './data/predict/test.jpg'
+    slice_path = './data/processing'
+    length = 256  # 长
+    width = 256  # 宽
+    stride = 50  # 步长
+    detect_dir = ''
+
+    def getImg(self):
+        img = Image.open(self.img_path)
+        return img
+
+    def slice(self, img):
+        """
+        将输入的图片切块
+        :param img:
+        :return:
+        """
+        img_name = (self.img_path.split('/')[-1]).split('.')[0]
+        slice_path = self.slice_path + '/' + img_name
+        self.detect_dir = slice_path  # 设置检测图片所在文件夹
+        utils.mkdir(slice_path)
+        x = img.size[0]
+        y = img.size[1]
+        round_num = (y - self.width)/self.stride + 2  # 轮数，为进度条做准备
+        count = 0
+        x_detect = 0
+        y_detect = 0
+        flag1 = True
+        flag2 = True
+        while(flag1):
+            while(flag2):
+                if x_detect + self.length < x:
+                    roi = img.crop((x_detect, y_detect, x_detect + self.length, y_detect + self.width))
+                    to_path = slice_path + '/' + img_name + '_' + str(x_detect) + '_' + str(y_detect) + '.png'
+                    roi.save(to_path, 'png')
+                    x_detect += self.stride
+                else:
+                    roi = img.crop((x - self.length, y_detect, x, y_detect + self.width))
+                    to_path = slice_path + '/' + img_name + '_' + str(x - self.length) + '_' + str(y_detect) + '.png'
+                    roi.save(to_path, 'png')
+                    x_detect = 0
+                    y_detect += self.stride
+                    flag2 = False
+            count += 1
+            print('完成进度：' + str(count/round_num) + '%' + '\r')
+            if y_detect + self.width < y:
+                flag2 = True
+            else:
+                y_detect = y - self.width
+                while x_detect + self.length < x:
+                    roi = img.crop((x_detect, y_detect, x_detect + self.length, y_detect + self.width))
+                    to_path = slice_path + '/' + img_name + '_' + str(x_detect) + '_' + str(y_detect) + '.png'
+                    roi.save(to_path, 'png')
+                    x_detect += self.stride
+
+                roi = img.crop((x - self.length, y_detect, x, y_detect + self.width))
+                to_path = slice_path + '/' + img_name + '_' + str(x - self.length) + '_' + str(y_detect) + '.png'
+                roi.save(to_path, 'png')
+
+                flag1 = False
+        print('切片完成')
+
+
+if __name__ == '__main__':
+    tool = detect()
+    img = detect.getImg(tool)
+    tool.slice(img)
