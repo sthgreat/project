@@ -1,15 +1,20 @@
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 import numpy as np
 import utils
+from sklearn.cluster import DBSCAN
+from sklearn import metrics
+from sklearn.datasets.samples_generator import make_blobs
+from sklearn.preprocessing import StandardScaler
 
 
 class detect:
     img_path = './data/predict/test.jpg'
+    img_save_path = './data/predict/test_result.png'
     slice_path = './data/processing'
     length = 256  # 长
     width = 256  # 宽
     stride = 50  # 步长
-    detect_dir = ''
+    detect_dir = './data/processing/test'
 
     def getImg(self):
         img = Image.open(self.img_path)
@@ -27,14 +32,14 @@ class detect:
         utils.mkdir(slice_path)
         x = img.size[0]
         y = img.size[1]
-        round_num = (y - self.width)/self.stride + 2  # 轮数，为进度条做准备
+        round_num = (y - self.width) / self.stride + 2  # 轮数，为进度条做准备
         count = 0
         x_detect = 0
         y_detect = 0
         flag1 = True
         flag2 = True
-        while(flag1):
-            while(flag2):
+        while (flag1):
+            while (flag2):
                 if x_detect + self.length < x:
                     roi = img.crop((x_detect, y_detect, x_detect + self.length, y_detect + self.width))
                     to_path = slice_path + '/' + img_name + '_' + str(x_detect) + '_' + str(y_detect) + '.png'
@@ -48,7 +53,7 @@ class detect:
                     y_detect += self.stride
                     flag2 = False
             count += 1
-            print('完成进度：' + str(count/round_num) + '%' + '\r')
+            print('完成进度：' + str(count / round_num) + '%' + '\r')
             if y_detect + self.width < y:
                 flag2 = True
             else:
@@ -66,8 +71,75 @@ class detect:
                 flag1 = False
         print('切片完成')
 
+    def predict_SinglePic(self, pic_path):
+        """
+        该函数，预测单个图片中的舰船，返回一个二维数组，其中一维数组[x,y,length,width]
+        x,y为识别框中心点位置,length为框长,width为框宽
+        :param pic_path:
+        :return:
+        """
+        img = self.getImg(pic_path)
+
+
+    def predict(self):
+        """
+        预测所有图片中的舰船，获得一个总的二维数组
+        :return:
+        """
+
+    def cluster(self, matrix):
+        """
+        输入二维数组，其中一维数组[x,y,length,width]
+        返回一个聚类后的二维数组
+        :param matrix:
+        :return:
+        """
+        print('聚类计算中')
+        result = list(np.zeros((2, 4), dtype=np.int))
+        temp = []
+        dic = {}  # 存放分类信息 key：类别，value：二维数组，其中一维数组[x,y,length,width]，前两维是个填充数组
+        for array in matrix:
+            temp.append([array[0], array[1]])
+        temp = np.array(temp)
+        db = DBSCAN(eps=20, min_samples=5).fit(temp)  # dbscan聚类
+        for i in range(len(matrix)):
+            if db.labels_[i] not in dic:
+                dic[db.labels_[i]] = list(np.zeros((2, 4), dtype=np.int))
+                dic[db.labels_[i]].append(matrix[i])
+            else:
+                dic[db.labels_[i]].append(matrix[i])
+
+        for key in dic:
+            size = len(dic[key]) - 2
+            x = 0
+            y = 0
+            length = 0
+            width = 0
+            for i in range(2, len(dic[key])):
+                x += dic[key][i][0]
+                y += dic[key][i][1]
+                length += dic[key][i][2]
+                width += dic[key][i][3]
+            result.append([x // size, y // size, length // size, width // size])  # 二维数组，其中一维数组[x,y,length,width]，前两维是个填充数组
+
+    def draw_detectPic(self, matrix):
+        """
+        该函数用来绘制预测框，输入一个二维的数组，其中一维数组[x,y,length,width]
+        x,y为识别框中心点位置,length为框长,width为框宽，并且保存
+        :param matrix:
+        :return:
+        """
+        img = self.getImg()
+        draw = ImageDraw.Draw(img)
+        for frame in matrix:
+            draw.rectangle([(frame[0] - frame[2] / 2), (frame[1] - frame[3] / 2),
+                            (frame[0] + frame[2] / 2), (frame[1] + frame[3] / 2)], outline=(0, 255, 0))
+        img.show()
+        img.save(self.img_save_path, 'png')
+
 
 if __name__ == '__main__':
     tool = detect()
-    img = detect.getImg(tool)
-    tool.slice(img)
+    # img = detect.getImg(tool)
+    # tool.slice(img)
+    tool.cluster([[50, 50, 100, 100], [100, 100, 50, 50], [60, 60, 100, 100]])
