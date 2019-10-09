@@ -1,6 +1,7 @@
 import argparse
 import os
 import pickle
+import time
 
 from PIL import Image, ImageDraw
 import numpy as np
@@ -16,13 +17,13 @@ from keras_frcnn import roi_helpers
 
 
 class detect:
-    img_path = 'F:/python_workplace/project/keras_frcnn-master/data/predict/test.jpg'
-    img_save_path = 'F:/python_workplace/project/keras_frcnn-master/data/predict/results/test_result.png'
+    img_path = 'F:/python_workplace/project/keras_frcnn-master/data/predict/test.jpg'  # 检测请修改这个
+    img_save_path = 'F:/python_workplace/project/keras_frcnn-master/data/predict/results/test_步长为100.png'  # 检测请修改这个
     slice_path = 'F:/python_workplace/project/keras_frcnn-master/data/predict/processing'
     length = 256  # 长
     width = 256  # 宽
-    stride = 50  # 步长
-    detect_dir = 'F:/python_workplace/project/keras_frcnn-master/data/predict/processing/test'  # 最后一个需要手动改为图名
+    stride = 100  # 步长
+    detect_dir = 'F:/python_workplace/project/keras_frcnn-master/data/predict/processing/test'  # 检测请修改这个，最后一个需要手动改为图名
 
     def getImg(self):
         img = Image.open(self.img_path)
@@ -61,7 +62,7 @@ class detect:
                     y_detect += self.stride
                     flag2 = False
             count += 1
-            print('完成进度：' + str(count / round_num) + '%' + '\r')
+            print('切片完成进度：' + str((count / round_num)*100) + '%' + '\r')
             if y_detect + self.width < y:
                 flag2 = True
             else:
@@ -157,25 +158,6 @@ class detect:
                 result_r[count_boxes][3] = b[3]
                 count_boxes += 1
             return result_r
-            # print(class_mapping[cls_num] + ":")
-            # result_r = list(np.array([[0,0,0,0]]).tolist())
-            # for i in range(len(boxes_nms)):
-            #     boxes_nms[i][0], boxes_nms[i][1], boxes_nms[i][2], boxes_nms[i][3] = get_real_coordinates(ratio, boxes_nms[i][0], boxes_nms[i][1], boxes_nms[i][2], boxes_nms[i][3])
-            #     if i == 0:
-            #         result_r[0][0] = boxes_nms[i][0]
-            #         result_r[0][1] = boxes_nms[i][1]
-            #         result_r[0][2] = boxes_nms[i][2]
-            #         result_r[0][3] = boxes_nms[i][3]
-            #     else:
-            #         result_r.append(getarray(boxes_nms[i]))
-            # return result_r
-
-            # for b in boxes_nms:
-            #     b[0], b[1], b[2], b[3] = get_real_coordinates(ratio, b[0], b[1], b[2], b[3])
-            #     # print('{} prob: {}'.format(b[0: 4], b[-1]))
-            #     # print(b)
-            #     b = getarray(b)
-            # return boxes_nms
 
     def predict_dir(self, args_):
         """
@@ -183,7 +165,7 @@ class detect:
         :return:总的二维数组
         """
         path = args_.path
-        with open('config2.pickle', 'rb') as f_in:
+        with open('config2.pickle', 'rb') as f_in:  # 训练时的设置，更改这里可以更改预测模型
             cfg = pickle.load(f_in)
         cfg.use_horizontal_flips = False
         cfg.use_vertical_flips = False
@@ -222,19 +204,23 @@ class detect:
 
         li = np.array([[0, 0, 0, 0]]).tolist()  # 第一维是个填充数组
         l = list(li)
+        count = 0
+        total_pic = len(os.listdir(path))
+        count_pic = 0
         if os.path.isdir(path):
             for idx, img_name in enumerate(sorted(os.listdir(path))):
-                count = 0
                 if not img_name.lower().endswith(('.bmp', '.jpeg', '.jpg', '.png', '.tif', '.tiff')):
                     continue
                 x = int(img_name.split('_')[1])
                 y = int(str(img_name.split('_')[2]).split('.')[0])
-                print(img_name + ',' + str(x) + ',' + str(y))
+                # print(img_name + ',' + str(x) + ',' + str(y))
 
                 array = self.predict_SinglePic(os.path.join(path, img_name), model_rpn,
                                                model_classifier_only, cfg, class_mapping)
                 if array is None:
-                    print("空！")
+                    # print("空！")
+                    count_pic += 1
+                    print("检测进度：" + str((count_pic / total_pic) * 100) + '%' + '\r')
                     continue
 
                 for i in array:
@@ -250,6 +236,8 @@ class detect:
                         i[2] += x
                         i[3] += y
                         l.append(i)
+                count_pic += 1
+                print("检测进度：" + str((count_pic/total_pic)*100) + '%' + '\r')
 
         elif os.path.isfile(path):
             print('predict image from {}'.format(path))
@@ -366,13 +354,14 @@ def parse_args():
 
 
 if __name__ == '__main__':
+    start_time = time.time()
     args = parse_args()
     tool = detect()
-    # img = detect.getImg(tool)
-    # tool.slice(img)
+    # img = detect.getImg(tool)  # 切片完成后再测试可以注释掉
+    # tool.slice(img)  # 切片完成后再测试可以注释掉
     matrix = tool.predict_dir(args)
-    print(matrix)
-    print(len(matrix))
-    cluster_matrix = tool.cluster(matrix)
-    tool.draw_detectPic(cluster_matrix)
+    # matrix = tool.cluster(matrix)  # 聚类开关，注释掉就不会使用聚类
+    end_time = time.time()
+    print('运行时间：'+ str(end_time - start_time) + ' s')
+    tool.draw_detectPic(matrix)
     # tool.cluster([[50, 50, 100, 100], [100, 100, 50, 50], [60, 60, 100, 100]])
